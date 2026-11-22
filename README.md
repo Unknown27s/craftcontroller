@@ -144,6 +144,9 @@ Color, button haptics and dead zone are in Appearance & touch. Restart after edi
 
 ## Website and credits
 
+Website: <https://unknown27s.github.io/craftcontroller/>.
+The Pages-only workflow publishes `docs/`; it does not rebuild or test Android.
+
 The GitHub Pages site is in `docs/index.html`. It includes installation,
 customization, connection and troubleshooting instructions. See
 [`docs/PUBLISHING.md`](docs/PUBLISHING.md) for preview/publishing steps. Nothing

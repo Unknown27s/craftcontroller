@@ -4,3 +4,4 @@
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 .app-preview{padding-bottom:45px}.app-preview img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:12px}.app-preview figcaption{margin-top:12px;font-size:12px;color:var(--muted)}
 .header nav{flex-wrap:wrap;row-gap:10px}
+.app-icon{display:block;flex-shrink:0;border-radius:10px}
