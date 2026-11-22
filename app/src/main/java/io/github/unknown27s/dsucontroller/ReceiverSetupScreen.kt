@@ -45,7 +45,7 @@ fun ReceiverSetupScreen(
         octets.size == 4 && octets.all { it.toIntOrNull()?.let { value -> value in 0..255 } == true }
     }
     val details = "CraftController ${BuildConfig.VERSION_NAME}\nPhone IPv4: $addresses\nUDP port: $port\n" +
-        "Protocol: DSU 1001; slot 0\nThese are this phone's listener details; the Manager port in its QR is a different endpoint."
+        "Protocol: DSU 1001; slot 1\nThese are this phone's listener details; the Manager port in its QR is a different endpoint."
     Column(Modifier.safeDrawingPadding().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -59,7 +59,7 @@ fun ReceiverSetupScreen(
         Surface(shape = RoundedCornerShape(20.dp), color = Color(0xFF142536)) {
             Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("This phone’s DSU listener", style = MaterialTheme.typography.titleLarge)
-                SelectionContainer { Text("IPv4: $addresses\nUDP: $port · Protocol 1001 · Slot 0") }
+                SelectionContainer { Text("IPv4: $addresses\nUDP: $port · Protocol 1001 · Slot 1") }
                 Text(when {
                     !status.running -> status.message
                     status.peers == 0 -> "Listening. No active DSU subscriber."

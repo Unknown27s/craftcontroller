@@ -61,13 +61,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val prefs = getSharedPreferences("controller", MODE_PRIVATE)
-        val mac = runCatching { prefs.getString("identity", null) }.getOrNull()?.takeIf { it.length == 12 }?.let { value ->
-            runCatching { ByteArray(6) { value.substring(it * 2, it * 2 + 2).toInt(16).toByte() } }.getOrNull()
-        } ?: ByteArray(6).also {
-            SecureRandom().nextBytes(it)
-            it[0] = 2
-            prefs.edit().putString("identity", it.joinToString("") { b -> "%02x".format(b.toInt() and 255) }).apply()
-        }
+        // The reference app advertises a fixed "DSU001" identity; match it so
+        // the Manager sees the same controller it already knows.
+        val mac = "DSU001".toByteArray()
         server = DsuServer(DsuCodec(SecureRandom().nextInt(), mac))
         connectivity = getSystemService(ConnectivityManager::class.java)
         observedNetwork = connectivity.activeNetwork

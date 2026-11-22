@@ -21,7 +21,7 @@ class DsuCodecTest {
         assertEquals(84, b.getShort(6).toInt())
         assertEquals(0x100002, b.getInt(16))
         assertEquals(2, bytes[21].toInt())
-        assertEquals(1, bytes[22].toInt())
+        assertEquals(2, bytes[22].toInt())
         assertEquals(1, bytes[31].toInt())
         assertEquals(0x1020304, b.getInt(32))
         for (i in 40..43) assertEquals(128, bytes[i].toInt() and 255)
@@ -49,11 +49,13 @@ class DsuCodecTest {
         assertNull(codec.decode(request(0x100002, ByteArray(7))))
         assertNull(codec.decode(request(0x100002, byteArrayOf(4, 0, 0, 0, 0, 0, 0, 0))))
         assertTrue(codec.matches(DsuCodec.Request.Subscribe(0, 0, List(6) { 0 })))
-        assertTrue(codec.matches(DsuCodec.Request.Subscribe(1, 0, List(6) { 0 })))
-        assertFalse(codec.matches(DsuCodec.Request.Subscribe(1, 1, List(6) { 0 })))
+        assertFalse(codec.matches(DsuCodec.Request.Subscribe(1, 0, List(6) { 0 })))
+        assertTrue(codec.matches(DsuCodec.Request.Subscribe(1, 1, List(6) { 0 })))
         assertTrue(codec.matches(DsuCodec.Request.Subscribe(2, 3, listOf<Byte>(2, 0, 0, 0, 0, 1))))
         assertEquals(3, codec.info(3)[20].toInt())
         assertEquals(0, codec.info(3)[21].toInt())
+        assertEquals(DsuCodec.SLOT, codec.info(1)[20].toInt())
+        assertEquals(2, codec.info(1)[21].toInt())
     }
 
     @Test fun malformedTrafficIsRejectedWithoutThrowing() {

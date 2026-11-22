@@ -46,7 +46,7 @@ class DsuCodec(private val serverId: Int, private val mac: ByteArray) {
 
     fun matches(request: Request.Subscribe): Boolean =
         request.flags == 0 ||
-            (request.flags and 1 != 0 && request.slot == 0) ||
+            (request.flags and 1 != 0 && request.slot == SLOT) ||
             (request.flags and 2 != 0 && request.mac == mac.toList())
 
     fun version(): ByteArray = frame(VERSION_MESSAGE, ByteBuffer.allocate(2).little().putShort(VERSION.toShort()).array())
@@ -58,9 +58,12 @@ class DsuCodec(private val serverId: Int, private val mac: ByteArray) {
 
     fun data(state: ControllerState, sequence: Int): ByteArray {
         val p = ByteArray(80)
-        identity(p, 0)
+        identity(p, SLOT)
         p[11] = 1
         ByteBuffer.wrap(p).little().putInt(12, sequence)
+        // The reference app sends epoch microseconds. Keep the field live
+        // rather than zero so clients that use it for ordering see new frames.
+        ByteBuffer.wrap(p).little().putLong(48, System.currentTimeMillis() * 1000L)
         for (button in state.buttons) {
             val offset = 16 + button.bank
             p[offset] = (p[offset].toInt() or button.mask).toByte()
@@ -74,12 +77,12 @@ class DsuCodec(private val serverId: Int, private val mac: ByteArray) {
 
     private fun identity(p: ByteArray, slot: Int) {
         p[0] = slot.toByte()
-        if (slot != 0) return
+        if (slot != SLOT) return
         p[1] = 2 // Connected.
-        p[2] = 1 // No gyro; never advertise a full motion source.
-        p[3] = 0 // Network transport has no corresponding standard connection enum.
+        p[2] = 2 // Reference app model; motion values below stay zero.
+        p[3] = 1 // Matches the reference app's connection field.
         mac.copyInto(p, 4)
-        p[10] = 0 // Phone battery reporting not implemented.
+        p[10] = 5 // Compatibility constant from the reference app, not a phone reading.
     }
 
     private fun frame(type: Int, payload: ByteArray): ByteArray {
@@ -92,6 +95,12 @@ class DsuCodec(private val serverId: Int, private val mac: ByteArray) {
 
     companion object {
         const val VERSION = 1001
+
+        /**
+         * DSU Manager subscribes to slot 1 (the original app advertises DSU001
+         * there). Slot 0 would be rejected and would receive no data.
+         */
+        const val SLOT = 1
         const val VERSION_MESSAGE = 0x100000
         const val INFO_MESSAGE = 0x100001
         const val DATA_MESSAGE = 0x100002

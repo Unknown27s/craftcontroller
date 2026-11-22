@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Packet-capture comparison between the original DSU Controller and CraftController 0.7.0, and the slot-1 fix in 0.7.1.">
+  <title>CraftController · Capture comparison</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .card table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+    .card th, .card td { text-align: left; padding: .55rem .6rem; border-bottom: 1px solid rgba(255,255,255,.12); vertical-align: top; }
+    .card th { font-weight: 600; }
+    .card tbody tr:last-child td { border-bottom: 0; }
+  </style>
+  <link rel="icon" type="image/svg+xml" href="assets/app-icon.svg">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="header wrap"><a class="brand" href="index.html"><img class="app-icon" src="assets/app-icon.svg" width="44" height="44" alt=""> CraftController</a><nav aria-label="Navigation"><a href="index.html#install">Install</a><a href="index.html#connect">Windows setup</a><a href="research.html">Research</a></nav></header>
+  <main id="main" class="wrap">
+    <section class="section">
+      <p class="eyebrow">PACKET EVIDENCE / 22 NOVEMBER 2026</p>
+      <h1>Connected, but no input.<br><span>The slot was wrong.</span></h1>
+      <p class="intro">Two Wireshark captures on the same phone and PC isolate the difference between the original DSU Controller and CraftController 0.7.0.</p>
+      <p>Capture A used the original DSU Controller 3.2.5. Capture B used CraftController 0.7.0 with the independent DSU probe also listening. Both captures were taken on the same LAN: phone <code>10.225.163.178</code>, PC <code>10.225.163.175</code>, phone listener UDP 26760. The PC capture saw both directions.</p>
+    </section>
+
+    <section class="section" style="padding-top:0">
+      <h2>What the Manager asked for</h2>
+      <div class="cards">
+        <article class="card"><h3>Original app</h3><p>The Manager subscribed with <code>flags=1 slot=1</code> and an all-zero MAC. The phone accepted it and sent 4,931 data packets to the Manager's port 53846 over 80.4 s, about 61.4 Hz.</p></article>
+        <article class="card"><h3>CraftController 0.7.0</h3><p>The Manager sent the same <code>flags=1 slot=1</code> subscription. The app only accepted slot 0, so every Manager subscription was ignored. The only data went to the probe on port 60998, which had subscribed with <code>flags=0 slot=0</code>.</p></article>
+      </div>
+      <p>The probe working was the misleading part. <code>flags=0</code> is a wildcard subscription, so it bypassed the slot check. The Manager was not wildcarding; it asked for slot 1 specifically.</p>
+    </section>
+
+    <section class="section" style="padding-top:0">
+      <h2>Side-by-side evidence</h2>
+      <div class="card">
+        <table>
+          <thead><tr><th>Field</th><th>Original 3.2.5</th><th>CraftController 0.7.0</th></tr></thead>
+          <tbody>
+            <tr><td>Subscription received</td><td><code>flags=1 slot=1</code>, MAC 00:00:00:00:00:00</td><td><code>flags=1 slot=1</code>, MAC 00:00:00:00:00:00</td></tr>
+            <tr><td>Subscription accepted</td><td>Yes</td><td>No — slot 0 only</td></tr>
+            <tr><td>Data destination</td><td>Manager 10.225.163.175:53846</td><td>Probe 10.225.163.175:60998</td></tr>
+            <tr><td>Data packets</td><td>4,931 in 80.4 s</td><td>2,178 to the probe; 0 to the Manager</td></tr>
+            <tr><td>Average data rate</td><td>~61.4 Hz</td><td>~52.4 Hz</td></tr>
+            <tr><td>Data slot</td><td>1</td><td>0</td></tr>
+            <tr><td>Identity in INFO/DATA</td><td>state 2, model 2, conn 1, MAC “DSU001”, battery 5</td><td>state 2, model 1, conn 0, random MAC, battery 0</td></tr>
+            <tr><td>Sequence</td><td>Starts at 1</td><td>Starts at 0</td></tr>
+            <tr><td>Timestamp</td><td>Live epoch microseconds</td><td>Zero</td></tr>
+            <tr><td>Accelerometer / gyroscope</td><td>Live values</td><td>Zeros</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="fine">Counts and rates are from the captures, not from a controlled benchmark. Frame rate depends on scheduling and is not a product specification.</p>
+    </section>
+
+    <section class="section" style="padding-top:0">
+      <h2>What changed in 0.7.1</h2>
+      <div class="split">
+        <div class="card"><h3>Protocol</h3><ul><li>Controller slot is now 1 in INFO and DATA.</li><li>Subscriptions for slot 1 are accepted; slot 0 is no longer treated as the only valid slot.</li><li>The identity matches the reference app: fixed <code>DSU001</code>, model 2, connection 1, battery 5.</li><li>DATA carries a live epoch-microsecond timestamp and a sequence starting at 1.</li></ul></div>
+        <div class="card"><h3>Timing</h3><p>0.7.0 restarted the 16.67 ms frame timer after every receive timeout, so the 4 ms socket timeout was added to each frame. 0.7.1 advances the schedule by one frame instead, with a resync guard after a real stall.</p><p>The capture measured 52.4 Hz for 0.7.0. 0.7.1 targets 60 Hz; that target has not yet been measured on a phone.</p></div>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top:0">
+      <h2>What this does not prove</h2>
+      <div class="card">
+        <p>A subscriber count, or even a correct data stream, does not prove that Windows created a virtual gamepad or that a game received input. Those remain separate checkpoints. The next useful evidence is:</p>
+        <ol>
+          <li>The Manager's subscriber count goes above zero while the controller is open.</li>
+          <li>Windows shows a gamepad (for example in <code>joy.cpl</code>).</li>
+          <li>A game responds to a button or stick movement.</li>
+        </ol>
+        <p>If step 1 works and step 2 does not, the remaining problem is on the PC side of the DSU connection, not the phone's UDP transport. The app sends model 2 to match the reference identity, but accelerometer and gyroscope values remain zero, so it does not provide motion input.</p>
+      </div>
+    </section>
+
+    <section class="section"><h2>Reproduce it</h2><p>The comparison scripts are small Python parsers because <code>tshark</code> was not installed. Capture on the PC with Wireshark, filter on UDP port 26760, and decode <code>DSUS</code>/<code>DSUC</code> packets. The project notes in <code>docs/manager-qr-findings.md</code> and <code>specs/revision-0.7.md</code> describe the announcement flow.</p><p><a class="button secondary" href="index.html#connect">Windows setup</a></p></section>
+  </main>
+  <footer class="wrap footer"><span>CraftController · Capture evidence, not a compatibility certification</span><a href="index.html">Back to app</a></footer>
+</body>
+</html>

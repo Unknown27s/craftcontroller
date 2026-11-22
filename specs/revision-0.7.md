@@ -53,6 +53,12 @@ Corrected:
 | B (right) | 0x20 circle | 30 |
 | Y (top) | 0x10 triangle | 31 |
 
+## Follow-up: 0.7.1 fixed the slot
+
+A capture comparison against the original app found that DSU Manager subscribes
+with `flags=1 slot=1`, while 0.7.0 only accepted slot 0. See
+`specs/revision-0.7.1.md` and `docs/capture-comparison.html`.
+
 ## What this revision does not prove
 
 - That the Windows Manager subscribes after the announcement.

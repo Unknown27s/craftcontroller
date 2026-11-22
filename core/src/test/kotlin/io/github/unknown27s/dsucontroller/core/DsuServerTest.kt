@@ -40,7 +40,7 @@ class DsuServerTest {
                 val first = receive()
                 val second = receive()
                 assertEquals(100, first.size)
-                assertEquals(32, first[37].toInt())
+                assertEquals(64, first[37].toInt())
                 assertEquals(255, first[40].toInt() and 255)
                 fun seq(bytes: ByteArray) = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getInt(32)
                 assertEquals(seq(first) + 1, seq(second))

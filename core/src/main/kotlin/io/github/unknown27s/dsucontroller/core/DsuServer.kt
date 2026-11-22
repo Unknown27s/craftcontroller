@@ -169,7 +169,11 @@ class DsuServer internal constructor(private val codec: DsuCodec, private val so
                         val (endpoint, peer) = iterator.next()
                         if (!sendTo(endpoint, codec.data(snapshot, peer.sequence++))) iterator.remove()
                     }
-                    nextFrame = tick + FRAME_NS
+                    // Advance the schedule instead of restarting it, otherwise the
+                    // receive timeout is added to every frame (measured 52.4 Hz).
+                    nextFrame += FRAME_NS
+                    // After a stall, resync instead of bursting to catch up.
+                    if (nextFrame < tick) nextFrame = tick + FRAME_NS
                 }
                 publish(token, ServerStatus(true, peers.size, "Listening on UDP $port", received, rejected, sendFailures, lastSendError))
             }
@@ -188,7 +192,7 @@ class DsuServer internal constructor(private val codec: DsuCodec, private val so
         socket.send(DatagramPacket(bytes, bytes.size, target))
     }
 
-    private data class Peer(var refreshed: Long, var sequence: Int = 0)
+    private data class Peer(var refreshed: Long, var sequence: Int = 1)
 
     private data class Announcement(val target: InetSocketAddress, val due: Long, val token: Int)
 

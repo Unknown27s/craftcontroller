@@ -1,6 +1,6 @@
 # CraftController — Android Prototype
 
-**Version: 0.7.0-prototype · build 8 · Android 8.0+**
+**Version: 0.7.1-prototype · build 9 · Android 8.0+**
 
 [Download prereleases](https://github.com/Unknown27s/craftcontroller/releases) ·
 [Website](https://unknown27s.github.io/craftcontroller/)
@@ -15,10 +15,13 @@ have not yet been validated. This is not a production release.
 The current 0.7 revision makes QR scanning actually connect: it restarts the
 foreground server that the camera paused, saves the PC endpoint, and immediately
 sends the DSU version announcement over UDP from the bound listener socket. The
-scanner now shows live subscriber state. Physical-phone and DSU Manager
-interoperability still need verification; a subscriber count is not proof that
-Windows created a gamepad or that a game received input. See
-[0.7 notes](specs/revision-0.7.md), [0.6 notes](specs/revision-0.6.md) and the
+scanner now shows live subscriber state. A packet-capture comparison against the
+original app also fixed the controller slot: the Manager subscribes to slot 1,
+so 0.7.1 accepts and sends slot 1 instead of slot 0. Physical-phone and DSU
+Manager interoperability still need verification; a subscriber count is not
+proof that Windows created a gamepad or that a game received input. See
+[0.7 notes](specs/revision-0.7.md), [0.7.1 notes](specs/revision-0.7.1.md),
+[0.6 notes](specs/revision-0.6.md) and the
 earlier [connection safeguards](specs/revision-0.5.1.md). The earlier
 [0.1 validation](specs/validation.md) does not validate the current interface or
 DSU Manager integration.
@@ -108,11 +111,11 @@ Workflow: [Android APK and GitHub Release](https://github.com/Unknown27s/craftco
 - To publish: **Actions → Android APK and GitHub Release → Run workflow** on
   `main`, enable **publish**, and leave **run_checks** off for a package-only run.
 - Alternatively, push a tag matching the built version name, currently
-  `v0.7.0-prototype`. A mismatched tag fails instead of publishing the wrong version.
+  `v0.7.1-prototype`. A mismatched tag fails instead of publishing the wrong version.
 - Publishes a GitHub **prerelease** with a versioned APK, SHA-256 checksums and
   version metadata. Existing release assets are never overwritten automatically.
 - Before the next release, increase both `versionName` and `versionCode` in
-  `app/build.gradle.kts` (current: **0.7.0-prototype**, **8**).
+  `app/build.gradle.kts` (current: **0.7.1-prototype**, **9**).
 
 CI APKs use temporary debug signing keys. They may not update over the local APK
 or another CI run; uninstalling to resolve a signing conflict deletes saved app
