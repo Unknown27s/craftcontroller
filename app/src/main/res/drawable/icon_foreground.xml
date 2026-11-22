@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <!-- Original offset-stick gamepad, kept inside adaptive icon mask safe bounds. -->
+    <path android:fillColor="#132B33" android:pathData="M35,35 L73,35 Q81,35 83,45 L88,66 Q90,78 80,78 Q75,78 68,69 L40,69 Q33,78 28,78 Q18,78 20,66 L25,45 Q27,35 35,35 Z" />
+    <path android:fillColor="#8BD5CA" android:pathData="M35,32 L73,32 Q81,32 83,42 L88,63 Q90,75 80,75 Q75,75 68,66 L40,66 Q33,75 28,75 Q18,75 20,63 L25,42 Q27,32 35,32 Z" />
+    <path android:fillColor="#10212A" android:pathData="M37,40 A8,8 0,1 0,37,56 A8,8 0,1 0,37,40 M61,51 A7,7 0,1 0,61,65 A7,7 0,1 0,61,51 M43,54 L47,54 L47,58 L51,58 L51,62 L47,62 L47,66 L43,66 L43,62 L39,62 L39,58 L43,58 Z" />
+    <path android:fillColor="#466E76" android:pathData="M37,43 A5,5 0,1 0,37,53 A5,5 0,1 0,37,43 M61,54 A4,4 0,1 0,61,62 A4,4 0,1 0,61,54" />
+    <path android:fillColor="#122630" android:pathData="M70,37 A4,4 0,1 0,70,45 A4,4 0,1 0,70,37 M77,44 A4,4 0,1 0,77,52 A4,4 0,1 0,77,44 M63,44 A4,4 0,1 0,63,52 A4,4 0,1 0,63,44 M70,51 A4,4 0,1 0,70,59 A4,4 0,1 0,70,51" />
+    <path android:fillColor="#FFD770" android:pathData="M70,39 A2,2 0,1 0,70,43 A2,2 0,1 0,70,39" />
+    <path android:fillColor="#FF787B" android:pathData="M77,46 A2,2 0,1 0,77,50 A2,2 0,1 0,77,46" />
+    <path android:fillColor="#70BBFF" android:pathData="M63,46 A2,2 0,1 0,63,50 A2,2 0,1 0,63,46" />
+    <path android:fillColor="#8BE36B" android:pathData="M70,53 A2,2 0,1 0,70,57 A2,2 0,1 0,70,53" />
+</vector>

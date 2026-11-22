@@ -1,0 +1,12 @@
+CraftController QR scanner
+
+ZXing Android Embedded, version 4.3.0
+Copyright (C) 2012-2022 ZXing authors, Journey Mobile.
+https://github.com/journeyapps/zxing-android-embedded
+Licensed under Apache License 2.0. See licenses/Apache-2.0.txt.
+
+The scanner uses ZXing core for barcode decoding, also under Apache License 2.0.
+https://github.com/zxing/zxing
+
+These projects are independent dependencies. Their authors do not endorse
+CraftController. CraftController does not copy DSU Controller application code.
