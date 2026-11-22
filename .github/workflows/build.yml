@@ -1,35 +1,136 @@
-name: Android checks
+name: Android APK and GitHub Release
+
 on:
   workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish this version as a GitHub prerelease
+        type: boolean
+        default: false
+      run_checks:
+        description: Run unit tests and lint before packaging (optional)
+        type: boolean
+        default: false
   pull_request:
+    paths:
+      - 'app/**'
+      - 'core/**'
+      - 'gradle/**'
+      - '*.gradle.kts'
+      - 'gradle.properties'
+      - 'gradlew*'
+      - 'tools/prepare_release.py'
+      - '.github/workflows/build.yml'
   push:
     branches: [main]
+    tags: ['v*']
+    paths:
+      - 'app/**'
+      - 'core/**'
+      - 'gradle/**'
+      - '*.gradle.kts'
+      - 'gradle.properties'
+      - 'gradlew*'
+      - 'tools/prepare_release.py'
+      - '.github/workflows/build.yml'
+
 permissions:
   contents: read
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
+    outputs:
+      version: ${{ steps.package.outputs.version }}
+      tag: ${{ steps.package.outputs.tag }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v3
       - uses: gradle/actions/setup-gradle@v4
-      - name: Install SDK platform
+      - name: Install Android SDK
         run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
-      - name: Test, lint and build
-        run: ./gradlew :core:test :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
-      - uses: actions/upload-artifact@v4
+      - name: Optional tests and lint
+        if: github.event_name == 'workflow_dispatch' && inputs.run_checks
+        run: ./gradlew :core:test :app:testDebugUnitTest :app:lintDebug --console=plain
+      - name: Build APK (no tests)
+        run: ./gradlew :app:assembleDebug --console=plain
+      - name: Prepare versioned APK and checksums
+        id: package
+        run: python3 tools/prepare_release.py
+      - name: Validate release tag
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          EXPECTED_TAG: ${{ steps.package.outputs.tag }}
+        run: test "$GITHUB_REF_NAME" = "$EXPECTED_TAG"
+      - name: Upload downloadable build
+        uses: actions/upload-artifact@v7.0.2
         with:
-          name: craftcontroller-test-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
-      - uses: actions/upload-artifact@v4
-        if: always()
+          name: craftcontroller-${{ steps.package.outputs.version }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload optional check reports
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.run_checks
+        uses: actions/upload-artifact@v7.0.2
         with:
-          name: test-reports
+          name: check-reports
           path: |
             core/build/reports/tests/
             app/build/reports/tests/
             app/build/reports/lint-results-debug.html
+
+  publish:
+    needs: build
+    if: >-
+      github.repository == 'Unknown27s/craftcontroller' &&
+      (startsWith(github.ref, 'refs/tags/') ||
+      (github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == 'refs/heads/main'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Download built APK
+        uses: actions/download-artifact@v8.0.2
+        with:
+          name: craftcontroller-${{ needs.build.outputs.version }}
+          path: dist
+      - name: Publish immutable prototype prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.build.outputs.version }}
+          TAG: ${{ needs.build.outputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd dist
+          sha256sum --check SHA256SUMS
+          if gh release view "$TAG" --json url > existing-release.json 2>/dev/null; then
+            echo "This version is already published. Existing assets will not be overwritten; bump versionName and versionCode for another release." >> "$GITHUB_STEP_SUMMARY"
+            cat existing-release.json >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if gh api "repos/$GH_REPO/git/ref/tags/$TAG" --jq .object.sha > tag-sha.txt 2>/dev/null; then
+            TAG_COMMIT=$(gh api "repos/$GH_REPO/commits/$TAG" --jq .sha)
+            test "$TAG_COMMIT" = "$GITHUB_SHA" || { echo 'Existing tag points to another commit; refusing to move it.'; exit 1; }
+          fi
+          gh release create "$TAG" \
+            "craftcontroller-$VERSION.apk" SHA256SUMS version.json \
+            --target "$GITHUB_SHA" \
+            --title "CraftController $VERSION" \
+            --notes-file RELEASE_NOTES.md \
+            --prerelease
+          gh release view "$TAG" --json url --jq .url >> "$GITHUB_STEP_SUMMARY"

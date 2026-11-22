@@ -1,5 +1,14 @@
 # CraftController — Android Prototype
 
+**Version: 0.6.0-prototype · build 7 · Android 8.0+**
+
+[Download prereleases](https://github.com/Unknown27s/craftcontroller/releases) ·
+[Website](https://unknown27s.github.io/craftcontroller/)
+
+![CraftController with Xbox-style touch controls, offset sticks and a connected D-pad](docs/assets/controller-v0.6.png)
+
+*Controller screenshot from the Android emulator. Phone and DSU Manager interoperability remain unverified.*
+
 Status: initial implementation. Physical-phone and DSU Manager interoperability
 have not yet been validated. This is not a production release.
 
@@ -87,6 +96,30 @@ Debug APK: `app/build/outputs/apk/debug/app-debug.apk`.
 Website download: `docs/downloads/craftcontroller-debug.apk`.
 Debug signing is for local testing, not distribution. No phone is installed to
 automatically by building.
+
+## Android builds and repository releases
+
+Workflow: [Android APK and GitHub Release](https://github.com/Unknown27s/craftcontroller/actions/workflows/build.yml).
+
+- App-source pushes and pull requests build an APK artifact. Tests/lint are off
+  unless explicitly selected in a manual run.
+- To publish: **Actions → Android APK and GitHub Release → Run workflow** on
+  `main`, enable **publish**, and leave **run_checks** off for a package-only run.
+- Alternatively, push a tag matching the built version name, currently
+  `v0.6.0-prototype`. A mismatched tag fails instead of publishing the wrong version.
+- Publishes a GitHub **prerelease** with a versioned APK, SHA-256 checksums and
+  version metadata. Existing release assets are never overwritten automatically.
+- Before the next release, increase both `versionName` and `versionCode` in
+  `app/build.gradle.kts` (current: **0.6.0-prototype**, **7**).
+
+CI APKs use temporary debug signing keys. They may not update over the local APK
+or another CI run; uninstalling to resolve a signing conflict deletes saved app
+data. No persistent/production signing key has been configured or uploaded.
+The older Pages download is a local build; use each download's own checksum.
+
+Rollback: remove a bad prerelease with `gh release delete TAG --yes` (preserves
+the source tag). Do not overwrite a published APK; fix it and publish a new
+version/code. This does not uninstall APKs already downloaded to phones.
 
 ## Try it on a trusted LAN
 
