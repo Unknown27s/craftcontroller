@@ -22,7 +22,7 @@
         <h1>Your phone.<br>Your <span>controller.</span><br>Your layout.</h1>
         <p class="intro">Put the sticks where your thumbs land. Move, resize and hide controls, pick a color, then save a gamepad that fits your hands.</p>
         <div class="actions"><a class="button primary" href="downloads/craftcontroller-debug.apk" download>Download test APK</a><a class="button secondary" href="#install">Installation guide</a></div>
-        <p class="fine">v0.6.0 prototype · Debug-signed test build · No store release · <a href="downloads/SHA256SUMS">SHA-256</a></p>
+        <p class="fine">v0.7.0 prototype · Debug-signed test build · No store release · <a href="downloads/SHA256SUMS">SHA-256</a></p>
       </div>
       <div class="device" role="img" aria-label="Illustration of a landscape gamepad layout with two sticks and ABXY buttons; not an app screenshot">
         <div class="device-top"><span class="live-dot"></span> YOUR LAYOUT <span class="device-note">LOCAL ONLY</span></div>
@@ -31,7 +31,7 @@
         <div class="device-bottom">MOVE · RESIZE · MAKE IT YOURS</div>
       </div>
     </section>
-    <aside class="notice wrap"><strong>CraftController 0.6: redesigned touch controls.</strong> Xbox-style controls, a connected D-pad and simpler Settings. Ten focused layout/input checks passed; phone and Windows interoperability remain unverified. QR scanning saves an endpoint only; Manager pairing is not implemented. <a href="research.html">Read the research and roadmap.</a></aside>
+    <aside class="notice wrap"><strong>CraftController 0.7: scanning now connects.</strong> The scanner restarts the foreground server, saves the PC endpoint and sends the DSU version announcement over UDP. The settings screen shows whether the PC subscribed. Windows gamepad output is still unverified. <a href="research.html">Read the research and roadmap.</a></aside>
 
     <section id="install" class="section wrap">
       <p class="eyebrow">01 / GET IT ON YOUR PHONE</p><h2>Install the test build</h2>
@@ -56,7 +56,7 @@
         <p class="fine">Four built-in presets and one saved custom layout. Switching presets keeps your custom layout. Keep controls apart to avoid overlapping hit areas. Multiple custom profiles, import/export and button remapping are not included yet.</p>
       </div>
     </div>
-      <figure class="wrap app-preview"><img src="assets/controller-v0.6.png" width="2400" height="1080" loading="lazy" alt="CraftController 0.6 with offset sticks, connected D-pad, vector symbols and colored ABXY buttons."><figcaption>Version 0.6 emulator capture. Physical-phone and DSU Manager compatibility remain unverified.</figcaption></figure>
+      <figure class="wrap app-preview"><img src="assets/controller-v0.6.png" width="2400" height="1080" loading="lazy" alt="CraftController with offset sticks, connected D-pad, vector symbols and colored ABXY buttons."><figcaption>Version 0.6 interface, unchanged in 0.7. Physical-phone and DSU Manager compatibility remain unverified.</figcaption></figure>
     </section>
 
     <section id="connect" class="section wrap">
@@ -64,10 +64,10 @@
       <div class="split">
         <div class="instructions"><ol>
           <li>Connect your phone and PC to the same trusted local network. Guest Wi-Fi may block devices from reaching each other.</li>
-          <li>Open <strong>PC setup</strong> in the app to see selectable phone addresses, the UDP port, and explicit Copy/Share actions. These are listener details, not Manager pairing data. Sharing or opening another app stops the foreground server.</li>
+          <li>Open <strong>PC setup</strong> in the app to see selectable phone addresses, the UDP port, and explicit Copy/Share actions. These are this phone's listener details; the Manager port in its QR is a different endpoint. Sharing or opening another app stops the foreground server.</li>
           <li>Use your existing Windows DSU Manager. Its published release identified during research is <strong>v0.6.2</strong>; record the version you actually have installed.</li>
-          <li>In CraftController's <strong>PC setup</strong>, tap <strong>Scan QR code</strong> and grant camera permission, or choose <strong>Enter manually</strong>. Review the PC IP and Manager port, then <strong>Save endpoint</strong>. This reads/stores the QR endpoint only; the subsequent pairing exchange is still unimplemented. Do not mistake “endpoint saved” for “paired”.</li>
-          <li>Later, validate pairing, a DSU subscription, Windows virtual-device output, and game input separately. A peer count alone does not prove a Windows gamepad exists. No new receiver or drivers are installed by CraftController.</li>
+          <li>In CraftController's <strong>Connection</strong> settings, tap <strong>Scan QR code</strong> and grant camera permission, or choose <strong>Enter address</strong>. The app restarts the server, saves the endpoint and sends the DSU version announcement to the Manager over UDP. Watch the subscriber count: zero means the PC has not subscribed; above zero means data packets are being delivered.</li>
+          <li>Validate the DSU subscription, Windows virtual-device output, and game input separately. A subscriber count alone does not prove a Windows gamepad exists. No new receiver or drivers are installed by CraftController.</li>
         </ol></div>
         <div class="card code-card"><h3>Check standard DSU first</h3><p>From a PC with Python 3, run the independent probe included in the project. Replace PHONE_IPV4 with the phone's address.</p><pre><code>python3 tools/probe.py PHONE_IPV4 --seconds 15</code></pre><p>It checks version, slot information, packet lengths and CRC, then prints button/stick changes. This is a protocol check, not a DSU Manager certification.</p><p class="fine">The app serves DSU data; it does not install a system-wide gamepad driver. Ordinary PC games may need a separate connector or virtual-controller driver.</p></div>
       </div>
@@ -75,8 +75,8 @@
 
     <section id="help" class="section wrap faq">
       <p class="eyebrow">WHEN SOMETHING DOESN'T CONNECT</p><h2>Quick checks</h2>
-      <details><summary>The peer count stays at zero</summary><p>Check the phone address and UDP port in the receiver. Disable guest-network isolation only if you manage the network. Check your PC firewall and receiver configuration. DSU clients must register and refresh their subscription; the phone does not broadcast unsolicited input.</p></details>
-      <details><summary>The server stopped when I switched apps</summary><p>That is deliberate. Locking the screen, backgrounding, opening the scanner, or changing the default network/IPv4 address stops the server. Transient focus loss only clears input; IPv6-only address changes do not stop it. Return to Settings, open Connection and restart the server.</p></details>
+      <details><summary>The peer count stays at zero</summary><p>Check that the scan reported the announcement was sent and that the server is running. Check the phone address and UDP port in the receiver, and the PC firewall. DSU clients must subscribe back to the phone; the phone does not send input to arbitrary endpoints.</p></details>
+      <details><summary>The server stopped when I switched apps</summary><p>That is deliberate. Locking the screen, backgrounding, or changing the default network/IPv4 address stops the server. Opening the scanner also stops it, but returning from a scan restarts it automatically before the announcement. If the server is still off, use <strong>Send again</strong> or restart it in Connection settings.</p></details>
       <details><summary>The receiver connects, but my game ignores the buttons</summary><p>Some DSU receivers only consume motion data. Check whether the receiver supports buttons and sticks and whether it exposes a controller to your game. Motion is disabled in this prototype; do not expect gyro-only receiver setups to work.</p></details>
       <details><summary>It says “Network error” or no LAN address is shown</summary><p>A network error may mean the port is already in use; try another port and update the receiver. Address detection and socket binding are separate. Verify that the phone has a usable IPv4 address. Hotspots, VPNs and multiple interfaces still need device-specific testing.</p></details>
       <details><summary>Where is my layout stored?</summary><p>On your phone, in this app's private settings. There is no account, sync service or analytics. Clearing app storage or uninstalling removes the layout. Export and multiple saved profiles are not implemented.</p></details>

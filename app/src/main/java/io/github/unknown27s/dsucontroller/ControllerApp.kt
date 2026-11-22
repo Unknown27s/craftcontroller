@@ -92,6 +92,16 @@ fun ControllerApp(
             prefs.edit().putInt("port", it).apply(); addresses = addressesProvider(); onStart(it)
         }
     }
+    fun ensureServer(): Boolean {
+        val current = server.status.value
+        if (current.running || current.message == "Starting…") return true
+        val value = validPort ?: return false
+        prefs.edit().putInt("port", value).apply()
+        addresses = addressesProvider()
+        onStart(value)
+        return true
+    }
+    fun announce(endpoint: ManagerEndpoint): Boolean = server.announce(endpoint.ip, endpoint.port)
     fun openLink(url: String) { runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) } }
     BackHandler(page != "play") {
         when (page) { "editor" -> showDiscard = true; "receiver" -> page = "settings"; else -> page = "play" }
@@ -103,7 +113,8 @@ fun ControllerApp(
             when (page) {
                 "receiver" -> ReceiverSetupScreen(prefs, status, addresses, port, validPort != null,
                     onBack = { page = "settings" }, onRefresh = { addresses = addressesProvider() },
-                    onToggleServer = ::toggleServer, onOpenLink = ::openLink)
+                    onToggleServer = ::toggleServer, onOpenLink = ::openLink,
+                    onEnsureServer = ::ensureServer, onAnnounce = ::announce)
                 "settings" -> Column(Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 24.dp)) {
                     Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                         TextButton(onClick = { page = "play" }) { Text("Back to controller") }
@@ -133,7 +144,7 @@ fun ControllerApp(
                                     }
                                     Column(Modifier.weight(.54f)) {
                                         Spacer(Modifier.height(4.dp))
-                                        ManagerQrCard(prefs, compact = true)
+                                        ManagerQrCard(prefs, status, compact = true, onEnsureServer = ::ensureServer, onAnnounce = ::announce)
                                     }
                                     }
                                 }

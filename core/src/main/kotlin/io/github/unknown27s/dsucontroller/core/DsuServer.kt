@@ -5,6 +5,7 @@ import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetSocketAddress
 import java.net.SocketTimeoutException
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -32,6 +33,7 @@ class DsuServer internal constructor(private val codec: DsuCodec, private val so
     val input = AtomicReference(ControllerState())
     private val mutableStatus = MutableStateFlow(ServerStatus())
     val status = mutableStatus.asStateFlow()
+    private val announcements = ConcurrentLinkedQueue<Announcement>()
     private var job: Job? = null
     @Volatile private var socket: DatagramSocket? = null
     @Volatile private var generation = 0
@@ -56,9 +58,28 @@ class DsuServer internal constructor(private val codec: DsuCodec, private val so
         socket?.close()
         socket = null
         job?.cancel()
+        announcements.clear()
         input.set(ControllerState())
         mutableStatus.value = ServerStatus(message = reason)
         return job
+    }
+
+    /**
+     * Queue a DSU version announcement to a Manager endpoint.
+     *
+     * Sends from the bound listener socket, because the PC replies to the source
+     * port it saw. Returns false when no listener is starting or running.
+     */
+    @Synchronized fun announce(host: String, port: Int, repeats: Int = 3, spacingMs: Long = 60): Boolean {
+        require(port in 1..65535) { "Port must be between 1 and 65535." }
+        require(repeats in 1..10) { "Repeat count must be between 1 and 10." }
+        require(spacingMs in 0..1_000) { "Spacing must be between 0 and 1000 ms." }
+        if (job?.isActive != true) return false
+        val target = InetSocketAddress(host, port)
+        val base = System.nanoTime()
+        val token = generation
+        repeat(repeats) { index -> announcements += Announcement(target, base + index * spacingMs * 1_000_000, token) }
+        return true
     }
 
     @Synchronized private fun publish(token: Int, value: ServerStatus) {
@@ -101,6 +122,16 @@ class DsuServer internal constructor(private val codec: DsuCodec, private val so
                     false
                 }
             }
+            fun drainAnnouncements(now: Long) {
+                while (true) {
+                    val next = announcements.peek() ?: return
+                    if (next.due > now) return
+                    if (!announcements.remove(next)) continue
+                    if (next.token != token) continue
+                    sendTo(next.target, codec.version())
+                }
+            }
+            drainAnnouncements(System.nanoTime())
             publish(token, ServerStatus(true, message = "Listening on UDP $port"))
             while (currentCoroutineContext().isActive) {
                 val now = System.nanoTime()
@@ -129,6 +160,7 @@ class DsuServer internal constructor(private val codec: DsuCodec, private val so
                     // A short receive timeout keeps the send cadence independent of requests.
                 }
                 val tick = System.nanoTime()
+                drainAnnouncements(tick)
                 peers.entries.removeAll { tick - it.value.refreshed >= PEER_TIMEOUT_NS }
                 if (tick >= nextFrame) {
                     val snapshot = input.get()
@@ -157,6 +189,8 @@ class DsuServer internal constructor(private val codec: DsuCodec, private val so
     }
 
     private data class Peer(var refreshed: Long, var sequence: Int = 0)
+
+    private data class Announcement(val target: InetSocketAddress, val due: Long, val token: Int)
 
     companion object {
         const val MAX_PEERS = 8

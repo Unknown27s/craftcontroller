@@ -73,3 +73,19 @@ An independent CraftController scanner can now be designed to:
 Follow-up: version 0.4 implements the scanner, manual entry, validation, review,
 save and forget flows described above. It still does not implement the pairing
 exchange or claim pairing works. Testing remains deferred at the user's request.
+
+## Resolved in 0.7: the post-scan message is a DSU announcement
+
+Read-only analysis of the installed original app (3.2.5) found that its QR handler
+calls the phone server's `respondVersion` with the QR address and port. That is a
+22-byte binary DSU 1001 `DSUS` version packet sent by **UDP** from the server's
+bound socket, three times at nominal 0 / 60 / 120 ms. It is not HTTP, WebSocket
+or an application-level login, and it is not awaited before the app shows its
+"connected" message.
+
+CraftController 0.7 therefore scans, saves, restarts the server if the camera
+paused it, and announces from the bound socket. Items 4 and 7 above are
+superseded for this specific, evidence-backed message. Everything after the
+announcement — Manager subscription order, Windows virtual device and game
+input — is still unverified. See `specs/revision-0.7.md`.
+

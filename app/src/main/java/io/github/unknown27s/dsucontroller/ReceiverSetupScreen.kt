@@ -35,6 +35,8 @@ fun ReceiverSetupScreen(
     onRefresh: () -> Unit,
     onToggleServer: () -> Unit,
     onOpenLink: (String) -> Unit,
+    onEnsureServer: () -> Boolean,
+    onAnnounce: (ManagerEndpoint) -> Boolean,
 ) {
     val context = LocalContext.current
     var notice by remember { mutableStateOf("") }
@@ -43,7 +45,7 @@ fun ReceiverSetupScreen(
         octets.size == 4 && octets.all { it.toIntOrNull()?.let { value -> value in 0..255 } == true }
     }
     val details = "CraftController ${BuildConfig.VERSION_NAME}\nPhone IPv4: $addresses\nUDP port: $port\n" +
-        "Protocol: DSU 1001; slot 0\nThese are phone listener details, not DSU Manager pairing data."
+        "Protocol: DSU 1001; slot 0\nThese are this phone's listener details; the Manager port in its QR is a different endpoint."
     Column(Modifier.safeDrawingPadding().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -53,7 +55,7 @@ fun ReceiverSetupScreen(
                 Text("CraftController + your existing DSU Manager", style = MaterialTheme.typography.bodySmall)
             }
         }
-        ManagerQrCard(prefs)
+        ManagerQrCard(prefs, status, onEnsureServer = onEnsureServer, onAnnounce = onAnnounce)
         Surface(shape = RoundedCornerShape(20.dp), color = Color(0xFF142536)) {
             Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("This phone’s DSU listener", style = MaterialTheme.typography.titleLarge)
@@ -89,17 +91,17 @@ fun ReceiverSetupScreen(
         }
         Surface(shape = RoundedCornerShape(20.dp), color = Color(0xFF2B2119)) {
             Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("Pairing is still an integration requirement", style = MaterialTheme.typography.titleMedium)
-                Text("CraftController can now scan the published Manager connection QR format and save its PC endpoint. It does not yet send the subsequent pairing/control exchange. QR read or endpoint saved does not mean paired.")
-                Text("If your receiver requires that exchange, it still cannot subscribe through this workflow until it is implemented. Keep your exact Manager version available, and do not publish QR codes containing pairing secrets.")
+                Text("What scanning does", style = MaterialTheme.typography.titleMedium)
+                Text("CraftController sends a DSU 1001 version announcement over UDP from its own listener socket to the Manager port in the QR. The PC then subscribes back to this phone's UDP port; only then does controller data flow.")
+                Text("A subscriber count above zero means the PC is receiving data packets. It still does not prove that Windows created a virtual gamepad or that a game received input — check those separately.")
             }
         }
         Text("Setup checklist", style = MaterialTheme.typography.titleLarge)
         Text("1. Keep the Windows PC and phone on the same trusted LAN.\n" +
             "2. Open your existing DSU Manager installation. No new receiver is required.\n" +
-            "3. Note the Manager version and how it accepts a phone connection. The original guide uses QR pairing.\n" +
-            "4. For a receiver that supports directly adding a standard DSU source, use the phone IPv4 and UDP port above. This path has not been established for DSU Manager.\n" +
-            "5. Later, verify all three stages separately: DSU subscription, a Windows virtual gamepad, and input reaching the game.")
+            "3. In Settings → Connection, scan the QR shown by DSU Manager. The announcement is sent immediately.\n" +
+            "4. Watch the subscriber count: zero means the PC has not subscribed; above zero means data packets are being delivered.\n" +
+            "5. Verify all three stages separately: DSU subscription, a Windows virtual gamepad, and input reaching the game.")
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             OutlinedButton(onClick = { onOpenLink("https://github.com/breeze2/dsu-controller-guides#run-with-dsu-manager-on-windows") }) { Text("Official setup guide") }
             OutlinedButton(onClick = { onOpenLink("https://github.com/breeze2/dsu-manager-guides/releases") }) { Text("DSU Manager releases") }

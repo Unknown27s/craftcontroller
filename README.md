@@ -1,6 +1,6 @@
 # CraftController — Android Prototype
 
-**Version: 0.6.0-prototype · build 7 · Android 8.0+**
+**Version: 0.7.0-prototype · build 8 · Android 8.0+**
 
 [Download prereleases](https://github.com/Unknown27s/craftcontroller/releases) ·
 [Website](https://unknown27s.github.io/craftcontroller/)
@@ -12,18 +12,20 @@
 Status: initial implementation. Physical-phone and DSU Manager interoperability
 have not yet been validated. This is not a production release.
 
-The current 0.6 revision adds a redesigned Xbox-style interface, a connected
-D-pad, proportional control clusters, vector symbols and categorized Settings.
-It builds successfully and passes ten focused layout/input checks. Physical-phone
-and DSU Manager interoperability remain unverified. QR scanning still only saves
-an endpoint; actual Manager pairing is not implemented. See
-[0.6 notes](specs/revision-0.6.md) and the earlier
-[connection safeguards](specs/revision-0.5.1.md). The earlier [0.1 validation](specs/validation.md)
-does not validate the current interface or DSU Manager integration.
+The current 0.7 revision makes QR scanning actually connect: it restarts the
+foreground server that the camera paused, saves the PC endpoint, and immediately
+sends the DSU version announcement over UDP from the bound listener socket. The
+scanner now shows live subscriber state. Physical-phone and DSU Manager
+interoperability still need verification; a subscriber count is not proof that
+Windows created a gamepad or that a game received input. See
+[0.7 notes](specs/revision-0.7.md), [0.6 notes](specs/revision-0.6.md) and the
+earlier [connection safeguards](specs/revision-0.5.1.md). The earlier
+[0.1 validation](specs/validation.md) does not validate the current interface or
+DSU Manager integration.
 
 **Receiver decision:** reuse the existing Windows **DSU Manager**. No new PC
-connector is being built. Its QR/control pairing is not implemented in
-CraftController; do not assume that a displayed phone endpoint completes pairing.
+connector is being built. The phone now announces itself over UDP; whether a
+given Manager version subscribes and produces Windows input remains unverified.
 
 ## Goal
 
@@ -88,8 +90,8 @@ Package only, without running tests:
 ./gradlew :app:assembleDebug
 ```
 
-Broad test suites/lint remain deferred by request; 0.6 ran only ten focused
-layout/input checks once. The full existing tasks can be used later:
+Broad test suites/lint remain deferred by request; 0.7 builds without running
+the full suites. The full existing tasks can be used later:
 `./gradlew :core:test :app:testDebugUnitTest :app:lintDebug`.
 
 Debug APK: `app/build/outputs/apk/debug/app-debug.apk`.
@@ -106,11 +108,11 @@ Workflow: [Android APK and GitHub Release](https://github.com/Unknown27s/craftco
 - To publish: **Actions → Android APK and GitHub Release → Run workflow** on
   `main`, enable **publish**, and leave **run_checks** off for a package-only run.
 - Alternatively, push a tag matching the built version name, currently
-  `v0.6.0-prototype`. A mismatched tag fails instead of publishing the wrong version.
+  `v0.7.0-prototype`. A mismatched tag fails instead of publishing the wrong version.
 - Publishes a GitHub **prerelease** with a versioned APK, SHA-256 checksums and
   version metadata. Existing release assets are never overwritten automatically.
 - Before the next release, increase both `versionName` and `versionCode` in
-  `app/build.gradle.kts` (current: **0.6.0-prototype**, **7**).
+  `app/build.gradle.kts` (current: **0.7.0-prototype**, **8**).
 
 CI APKs use temporary debug signing keys. They may not update over the local APK
 or another CI run; uninstalling to resolve a signing conflict deletes saved app
@@ -127,11 +129,12 @@ version/code. This does not uninstall APKs already downloaded to phones.
 2. Open **PC setup** for phone IPv4 addresses and UDP port (default 26760).
    Start the server explicitly. A listener is not a paired Windows controller.
 3. Use your existing Windows DSU Manager. The published release found during
-   research is **v0.6.2**; the user's installed version is unknown. The original
-   app pairs using a Manager QR code; CraftController does not implement that
-   control handshake yet. If it is required, stop here until integration is
-   implemented. A generic receiver's direct DSU-source option is not proof that
-   DSU Manager accepts the same setup.
+   research is **v0.6.2**; the user's installed version is unknown. Open
+   **Settings → Connection**, scan the Manager QR, and the app sends the DSU
+   version announcement automatically. Watch the subscriber count: zero means
+   the PC has not subscribed; above zero means data packets are being delivered.
+   A generic receiver's direct DSU-source option is not proof that DSU Manager
+   accepts the same setup.
 4. For an independent standard-DSU check from the PC:
 
    ```sh

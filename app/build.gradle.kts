@@ -11,8 +11,8 @@ android {
         applicationId = "io.github.unknown27s.dsucontroller"
         minSdk = 26
         targetSdk = 36
-        versionCode = 7
-        versionName = "0.6.0-prototype"
+        versionCode = 8
+        versionName = "0.7.0-prototype"
     }
     buildFeatures { compose = true; buildConfig = true }
     compileOptions {
